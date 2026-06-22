@@ -9,14 +9,14 @@ import React from "react";
 
 const navItems = [
   { label: "Library", href: "/" },
-  { label: "Add New", href: "/books" },
+  { label: "Add New", href: "/books/new" },
 ];
 const Navbar = () => {
   const pathName = usePathname();
   const { user, isSignedIn } = useUser();
 
   return (
-    <header className="w-full fixed-50 bg-(--'bg-primary') ">
+    <header className="w-full fixed top-0 z-50 bg-(--bg-primary)">
       <div className="wrapper navbar-height py-4 flex justify-between items-center">
         <Link href="/" className="flex gap-0.5 items-center">
           <Image

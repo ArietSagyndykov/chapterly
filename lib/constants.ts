@@ -179,15 +179,15 @@ export const VAPI_DASHBOARD_CONFIG = {
 export const CLERK_AUTH_APPEARANCE_OVERRIDE = {
   rootBox: "mx-auto",
   card: "shadow-none border-none rounded-xl bg-transparent",
-  headerTitle: "!text-2xl font-bold text-[#212a3b]",
-  headerSubtitle: "!mt-3 !text-sm text-[#3d485e]",
+  headerTitle: "text-2xl! font-bold text-[#212a3b]",
+  headerSubtitle: "mt-3! text-sm! text-[#3d485e]",
   socialButtonsBlockButton:
-    "!border border-[rgba(33,42,59,0.12)] hover:bg-[#212a3b]/10 transition-all h-12 text-lg !rounded-xl shadow-[0_1px_3px_rgba(0,0,0,0.04),0_4px_12px_rgba(0,0,0,0.08)]",
-  socialButtonsBlockButtonText: "font-medium !text-[#212a3b] !text-lg",
+    "border! border-[rgba(33,42,59,0.12)] hover:bg-[#212a3b]/10 transition-all h-12 text-lg rounded-xl! shadow-[0_1px_3px_rgba(0,0,0,0.04),0_4px_12px_rgba(0,0,0,0.08)]",
+  socialButtonsBlockButtonText: "font-medium text-[#212a3b]! text-lg!",
   formButtonPrimary:
-    "bg-[#212a3b] hover:bg-[#3d485e] text-white font-medium !border-0 shadow-[0_1px_3px_rgba(0,0,0,0.04),0_4px_12px_rgba(0,0,0,0.08)] normal-case !h-12 !text-lg !rounded-xl",
+    "bg-[#212a3b] hover:bg-[#3d485e] text-white font-medium border-0! shadow-[0_1px_3px_rgba(0,0,0,0.04),0_4px_12px_rgba(0,0,0,0.08)] normal-case h-12! text-lg! rounded-xl!",
   formFieldInput:
-    "!border !border-[rgba(33,42,59,0.12)] !rounded-xl focus:ring-[#212a3b] focus:border-[#212a3b] !h-12 !min-h-12 !text-lg !bg-white shadow-[0_1px_2px_rgba(0,0,0,0.04),0_1px_3px_rgba(0,0,0,0.06)]",
+    "border! border-[rgba(33,42,59,0.12)]! rounded-xl! focus:ring-[#212a3b] focus:border-[#212a3b] h-12! min-h-12! text-lg! bg-white! shadow-[0_1px_2px_rgba(0,0,0,0.04),0_1px_3px_rgba(0,0,0,0.06)]",
   formFieldLabel: "text-[#212a3b] font-medium text-lg",
   footerActionLink: "text-[#212a3b] hover:text-[#3d485e] text-base font-medium",
 };

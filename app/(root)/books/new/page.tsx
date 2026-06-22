@@ -7,7 +7,7 @@ const page = () => {
             <div className='mx-auto max-w-180 space-y-10'>
                 <section className='flex flex-col gap-5'>
                     <h1 className='page-title-xl'>Add a New Book</h1>
-                    <p className='subtitle'> Upload a PDF to genereate to generate a discussion</p>
+                    <p className='subtitle'> Upload a PDF to generate a discussion</p>
                 </section>
                 <UploadForm />
             </div>
