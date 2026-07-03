@@ -7,13 +7,20 @@ import { z } from "zod";
 import { Upload, ImageIcon, X, Loader2 } from "lucide-react";
 import { UploadSchema } from "@/lib/zod";
 import { voiceOptions, voiceCategories, DEFAULT_VOICE } from "@/lib/constants";
+import { useAuth } from "@clerk/nextjs";
+import { toast } from "sonner";
+import { checkBookExists, createBook, saveBookSegments } from "@/lib/actions/book.actions";
+import { useRouter } from "next/navigation";
+import { parsePDFFile } from "@/lib/utils";
+import { upload } from "@vercel/blob/client";
 
 type BookUploadFormValues = z.infer<typeof UploadSchema>;
 
 const UploadForm = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
-
+  const { userId } = useAuth();
+  const router = useRouter();
   const pdfInputRef = useRef<HTMLInputElement>(null);
   const coverInputRef = useRef<HTMLInputElement>(null);
 
@@ -27,15 +34,95 @@ const UploadForm = () => {
       title: "",
       author: "",
       voice: DEFAULT_VOICE,
+      pdfFile: undefined,
+      coverImage: undefined,
+
     },
   });
 
-  const onSubmit = async (values: BookUploadFormValues) => {
+  const onSubmit = async (data: BookUploadFormValues) => {
+
+    if (!userId) {
+      return toast.error("Please login to upload books");
+    }
     setIsSubmitting(true);
-    console.log(values);
-    // Simulate submission
-    await new Promise((resolve) => setTimeout(resolve, 3000));
-    setIsSubmitting(false);
+    //PostHog -> Track back Uploads
+    try {
+      const existsCheck = await checkBookExists(data.title);
+      if (existsCheck.exists && existsCheck.book) {
+        toast.info("Book with same name already exists");
+        form.reset();
+        router.push(`/books/${existsCheck.book.slug}`);
+        return;
+
+      }
+      const fileTitle = data.title.replace(/\s+/g, '-').toLowerCase();
+      const pdfFile = data.pdfFile;
+      const parsedPDF = await parsePDFFile(pdfFile);
+
+      if (parsedPDF.content.length === 0) {
+        toast.error("Failed to parse PDF. Please try again later");
+        return;
+      }
+      const uploadedPdfBlob = await upload(fileTitle, pdfFile, {
+        access: "public",
+        handleUploadUrl: "/api/upload",
+        contentType: "application/pdf"
+      });
+      let coverUrl: string;
+      if (data.coverImage) {
+        const uploadedCoverBlob = await upload(`${fileTitle}_cover.png`, data.coverImage, {
+          access: "public",
+          handleUploadUrl: "/api/upload",
+          contentType: "image/jpeg"
+        });
+        coverUrl = uploadedCoverBlob.url;
+      }
+      else {
+        const response = await fetch(parsedPDF.cover);
+        const blob = await response.blob();
+        const uploadedCoverBlob = await upload(`${fileTitle}_cover.png`, blob, {
+          access: "public",
+          handleUploadUrl: "/api/upload",
+          contentType: "image/jpeg"
+        });
+        coverUrl = uploadedCoverBlob.url;
+      }
+      const book = await createBook({
+        clerkId: userId,
+        title: data.title,
+        author: data.author,
+        persona: data.voice,
+        fileURL: uploadedPdfBlob.url,
+        fileBlobKey: uploadedPdfBlob.pathname,
+        coverURL: coverUrl,
+        fileSize: pdfFile.size,
+
+      });
+
+      if (!book.success) throw new Error("Failed to create a book");
+      if (book.alreadyExists) {
+        toast.info("Book with same name already exists");
+        form.reset();
+        router.push(`/books/${book.data.slug}`);
+        return;
+
+      }
+      const segments = await saveBookSegments(book.data._id, userId, parsedPDF.content);
+      if (!segments.success) {
+        toast.error("Failed to save book segments");
+        throw new Error("Failed to save book segments");
+      }
+      form.reset();
+      router.push("/");
+
+    } catch (error) {
+      console.log(error);
+      toast.error("Failed to upload book. Please try again later.");
+    } finally {
+      setIsSubmitting(false);
+    }
+
   };
 
   if (!isMounted) return null;
@@ -221,8 +308,8 @@ const UploadForm = () => {
                       <label
                         key={voiceKey}
                         className={`voice-selector-option justify-start! ${isSelected
-                            ? "voice-selector-option-selected"
-                            : "voice-selector-option-default"
+                          ? "voice-selector-option-selected"
+                          : "voice-selector-option-default"
                           }`}
                       >
                         <input
@@ -259,8 +346,8 @@ const UploadForm = () => {
                       <label
                         key={voiceKey}
                         className={`voice-selector-option justify-start! ${isSelected
-                            ? "voice-selector-option-selected"
-                            : "voice-selector-option-default"
+                          ? "voice-selector-option-selected"
+                          : "voice-selector-option-default"
                           }`}
                       >
                         <input
