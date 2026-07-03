@@ -11,7 +11,12 @@ const BookPage = async ({ params }: BookPageProps) => {
     const { slug } = await params;
     const result = await getBookBySlug(slug);
 
-    if (!result.success || !result.data) return notFound();
+    if (!result.success) {
+        if (result.notFound) notFound();
+        throw new Error(result.error);
+    }
+
+    if (!result.data) notFound();
 
     const book = result.data as IBook;
 

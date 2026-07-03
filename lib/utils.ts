@@ -1,5 +1,6 @@
 import { TextSegment } from '@/types';
 import { clsx, type ClassValue } from 'clsx';
+import type { PDFDocumentLoadingTask } from 'pdfjs-dist/types/src/pdf';
 import { twMerge } from 'tailwind-merge';
 import { DEFAULT_VOICE, voiceOptions } from './constants';
 
@@ -13,13 +14,24 @@ export const serializeData = <T>(data: T): T => JSON.parse(JSON.stringify(data))
 
 // Auto generate slug
 export function generateSlug(text: string): string {
-  return text
+  const slug = text
     .replace(/\.[^/.]+$/, '') // Remove file extension (.pdf, .txt, etc.)
+    .normalize('NFKD') // Split accented characters so marks can be removed
+    .replace(/\p{Mark}/gu, '') // Remove accent marks while preserving base letters
     .toLowerCase() // Convert to lowercase
     .trim() // Remove whitespace from both ends
-    .replace(/[^\w\s-]/g, '') // Remove special characters (keep letters, numbers, spaces, hyphens)
+    .replace(/[^\p{Letter}\p{Number}\s_-]/gu, '') // Keep Unicode letters/numbers, spaces, underscores, hyphens
     .replace(/[\s_]+/g, '-') // Replace spaces and underscores with hyphens
     .replace(/^-+|-+$/g, ''); // Remove leading/trailing hyphens
+
+  if (slug) return slug;
+
+  let hash = 0;
+  for (let i = 0; i < text.length; i++) {
+    hash = (hash * 31 + text.charCodeAt(i)) >>> 0;
+  }
+
+  return `book-${hash.toString(36)}`;
 }
 
 // Escape regex special characters to prevent ReDoS attacks
@@ -91,6 +103,8 @@ export const formatDuration = (seconds: number): string => {
 };
 
 export async function parsePDFFile(file: File) {
+  let loadingTask: PDFDocumentLoadingTask | null = null;
+
   try {
     const pdfjsLib = await import('pdfjs-dist');
 
@@ -105,7 +119,7 @@ export async function parsePDFFile(file: File) {
     const arrayBuffer = await file.arrayBuffer();
 
     // Load PDF document
-    const loadingTask = pdfjsLib.getDocument({ data: arrayBuffer });
+    loadingTask = pdfjsLib.getDocument({ data: arrayBuffer });
     const pdfDocument = await loadingTask.promise;
 
     // Render first page as cover image
@@ -145,9 +159,6 @@ export async function parsePDFFile(file: File) {
     // Split text into segments for search
     const segments = splitIntoSegments(fullText);
 
-    // Clean up PDF document resources
-    await loadingTask.destroy();
-
     return {
       content: segments,
       cover: coverDataURL,
@@ -155,5 +166,11 @@ export async function parsePDFFile(file: File) {
   } catch (error) {
     console.error('Error parsing PDF:', error);
     throw new Error(`Failed to parse PDF file: ${error instanceof Error ? error.message : String(error)}`);
+  } finally {
+    try {
+      await loadingTask?.destroy();
+    } catch (cleanupError) {
+      console.warn('Error cleaning up PDF resources:', cleanupError);
+    }
   }
 }

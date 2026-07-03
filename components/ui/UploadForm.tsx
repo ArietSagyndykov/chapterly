@@ -9,7 +9,7 @@ import { UploadSchema } from "@/lib/zod";
 import { voiceOptions, voiceCategories, DEFAULT_VOICE } from "@/lib/constants";
 import { useAuth } from "@clerk/nextjs";
 import { toast } from "sonner";
-import { checkBookExists, createBook, saveBookSegments } from "@/lib/actions/book.actions";
+import { checkBookExists, createBook, deleteBookBlobs, saveBookSegments } from "@/lib/actions/book.actions";
 import { useRouter } from "next/navigation";
 import { parsePDFFile } from "@/lib/utils";
 import { upload } from "@vercel/blob/client";
@@ -102,6 +102,10 @@ const UploadForm = () => {
 
       if (!book.success) throw new Error("Failed to create a book");
       if (book.alreadyExists) {
+        const cleanupResult = await deleteBookBlobs([uploadedPdfBlob.url, coverUrl]);
+        if (!cleanupResult.success) {
+          console.warn("Failed to delete duplicate upload blobs", cleanupResult.error);
+        }
         toast.info("Book with same name already exists");
         form.reset();
         router.push(`/books/${book.data.slug}`);
