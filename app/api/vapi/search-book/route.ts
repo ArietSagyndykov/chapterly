@@ -50,7 +50,11 @@ export async function POST(request: Request) {
     try {
         const body = await request.json();
 
-        console.log('Vapi search-book request:', JSON.stringify(body, null, 2));
+        console.log('Vapi search-book request received', {
+            type: body?.message?.type,
+            toolCallCount: (body?.message?.toolCallList ?? body?.message?.toolCalls)?.length ?? 0,
+            hasFunctionCall: Boolean(body?.message?.functionCall),
+        });
 
         // Support multiple Vapi formats
         const functionCall = body?.message?.functionCall;

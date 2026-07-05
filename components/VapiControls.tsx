@@ -3,14 +3,22 @@
 import Transcript from '@/components/Transcript';
 import useVapi from '@/hooks/useVapi';
 import { IBook } from '@/types';
+import { formatDuration } from '@/lib/utils';
 import { Mic, MicOff } from 'lucide-react'
 import Image from 'next/image';
-import React from 'react'
+import React, { useEffect } from 'react'
+import { toast } from 'sonner';
 
 const VapiControls = ({ book }: { book: IBook }) => {
 
-    const { status, isActive, messages, currentMessage, currentUserMessage, duration, start, stop, clearErrors } = useVapi(book);
+    const { status, isActive, messages, currentMessage, currentUserMessage, duration, limitError, start, stop, clearErrors } = useVapi(book);
     const isAiBusy = status === "speaking" || status === "thinking";
+
+    useEffect(() => {
+        if (!limitError) return;
+        toast.error(limitError);
+        clearErrors();
+    }, [limitError, clearErrors]);
     return (
         <>
             <section className="vapi-header-card w-full">
@@ -57,7 +65,7 @@ const VapiControls = ({ book }: { book: IBook }) => {
                             <span className="vapi-status-text">Voice:</span>
                         </div>
                         <div className="vapi-status-indicator">
-                            <span className="vapi-status-text">0:00/15:00</span>
+                            <span className="vapi-status-text">{formatDuration(duration)}/15:00</span>
                         </div>
                     </div>
                 </div>
