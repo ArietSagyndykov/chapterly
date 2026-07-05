@@ -181,16 +181,20 @@ export const useVapi = (book: IBook) => {
 
     }
     const stop = async () => {
+        if (isStoppingRef.current) return;
         isStoppingRef.current = true;
-        await getVapi().stop();
+        try {
+            await getVapi().stop();
 
-        if (sessionIdRef.current) {
-            await endVoiceSesion(sessionIdRef.current, duration);
-            sessionIdRef.current = null;
+            if (sessionIdRef.current) {
+                await endVoiceSesion(sessionIdRef.current, duration);
+                sessionIdRef.current = null;
+            }
+
+            setStatus("idle");
+        } finally {
+            isStoppingRef.current = false;
         }
-
-        setStatus("idle");
-        isStoppingRef.current = false;
     }
     const clearErrors = () => {
         setLimitError(null);
