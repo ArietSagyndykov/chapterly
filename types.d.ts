@@ -51,6 +51,14 @@ export interface IVoiceSession extends Document {
 
 }
 
+export type StartSessionResult =
+    | { success: true; sessionId: string }
+    | { success: false; error: string };
+
+export type EndSessionResult =
+    | { success: true }
+    | { success: false; error: string };
+
 // ============================================
 // FORM & INPUT TYPES
 // ============================================
@@ -117,4 +125,10 @@ export interface FileUploadFieldProps<T extends FieldValues> {
     icon: LucideIcon;
     placeholder: string;
     hint: string;
+}
+export interface StartSessionResult {
+    success: boolean,
+    sessionId: string,
+    maxDurationMinutes?: number,
+    error?: string
 }
