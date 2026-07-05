@@ -1,44 +1,45 @@
+import VapiControls from "@/components/VapiControls";
 import { getBookBySlug } from "@/lib/actions/book.actions";
 import { IBook } from "@/types";
+import { auth } from "@clerk/nextjs/server";
+import { ArrowLeft, Mic, MicOff } from "lucide-react";
 import Image from "next/image";
-import { notFound } from "next/navigation";
+import Link from "next/link";
+import { redirect } from "next/navigation";
 
 interface BookPageProps {
     params: Promise<{ slug: string }>;
 }
 
 const BookPage = async ({ params }: BookPageProps) => {
+    const { userId } = await auth();
+    if (!userId) redirect("/");
+
     const { slug } = await params;
     const result = await getBookBySlug(slug);
 
     if (!result.success) {
-        if (result.notFound) notFound();
+        if (result.notFound) redirect("/");
         throw new Error(result.error);
     }
 
-    if (!result.data) notFound();
+    if (!result.data) redirect("/");
 
     const book = result.data as IBook;
+    const voice = book.persona || "Default";
 
     return (
-        <main className="flex flex-col items-center px-6 py-12 max-w-4xl mx-auto w-full">
-            <div className="flex flex-col md:flex-row gap-10 w-full">
-                {book.coverURL && (
-                    <Image
-                        src={book.coverURL}
-                        alt={book.title}
-                        width={200}
-                        height={300}
-                        className="rounded-lg object-cover shadow-md shrink-0"
-                    />
-                )}
-                <div className="flex flex-col gap-3 justify-center">
-                    <h1 className="text-3xl font-bold">{book.title}</h1>
-                    <p className="text-lg text-gray-500">{book.author}</p>
-                    <p className="text-sm text-gray-400">{book.totalSegments} segments processed</p>
-                </div>
-            </div>
-        </main>
+        <>
+            <Link href="/" className="back-btn-floating" aria-label="Back to library">
+                <ArrowLeft className="size-5 text-[#212a3b]" />
+            </Link>
+
+            <main className="book-page-container">
+
+
+                <VapiControls book={book} />
+            </main>
+        </>
     );
 };
 
