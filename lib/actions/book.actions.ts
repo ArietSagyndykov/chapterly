@@ -1,5 +1,5 @@
 "use server"
-import { connnectToDatabase } from "@/database/mongoose";
+import { connectToDatabase } from "@/database/mongoose";
 import { CreateBook, TextSegment } from "@/types";
 import { escapeRegex, generateSlug, serializeData } from "../utils";
 import BookSegment from "@/database/models/bookSegment.model";
@@ -31,7 +31,7 @@ export const deleteBookBlobs = async (urls: string[]) => {
 
 export const getAllBooks = async () => {
     try {
-        await connnectToDatabase();
+        await connectToDatabase();
         const books = await Book.find().sort({ createdAt: -1 }).lean();
 
         return {
@@ -52,7 +52,7 @@ export const getAllBooks = async () => {
 }
 export const getBookBySlug = async (slug: string) => {
     try {
-        await connnectToDatabase();
+        await connectToDatabase();
         const book = await Book.findOne({ slug }).lean();
         if (!book) return { success: false, notFound: true, error: "Book not found" };
         return { success: true, data: serializeData(book) };
@@ -65,7 +65,7 @@ export const getBookBySlug = async (slug: string) => {
 export const checkBookExists = async (title: string) => {
 
     try {
-        await connnectToDatabase();
+        await connectToDatabase();
         const slug = generateSlug(title);
 
         const existingBook = await Book.findOne({ slug }).lean();
@@ -92,7 +92,7 @@ export const checkBookExists = async (title: string) => {
 export const createBook = async (data: CreateBook) => {
     try {
 
-        await connnectToDatabase();
+        await connectToDatabase();
 
         const slug = generateSlug(data.title);
         const existingBook = await Book.findOne({ slug }).lean();
@@ -123,7 +123,7 @@ export const saveBookSegments = async (bookId: string, clerkId: string, segments
 
     try {
 
-        const db = await connnectToDatabase();
+        const db = await connectToDatabase();
         const session = await db.startSession();
         console.log("Saving  book segments");
 
@@ -159,7 +159,7 @@ export const saveBookSegments = async (bookId: string, clerkId: string, segments
 
 export const searchBookSegments = async (bookId: string, query: string, limit: number = 5) => {
     try {
-        await connnectToDatabase();
+        await connectToDatabase();
 
         console.log(`Searching for: "${query}" in book ${bookId}`);
 
@@ -184,16 +184,19 @@ export const searchBookSegments = async (bookId: string, query: string, limit: n
         // Fallback: regex search matching ANY keyword
         if (segments.length === 0) {
             const keywords = query.split(/\s+/).filter((k) => k.length > 2);
-            const pattern = keywords.map(escapeRegex).join('|');
 
-            segments = await BookSegment.find({
-                bookId: bookObjectId,
-                content: { $regex: pattern, $options: 'i' },
-            })
-                .select('_id bookId content segmentIndex pageNumber wordCount')
-                .sort({ segmentIndex: 1 })
-                .limit(limit)
-                .lean();
+            if (keywords.length > 0) {
+                const pattern = keywords.map(escapeRegex).join('|');
+
+                segments = await BookSegment.find({
+                    bookId: bookObjectId,
+                    content: { $regex: pattern, $options: 'i' },
+                })
+                    .select('_id bookId content segmentIndex pageNumber wordCount')
+                    .sort({ segmentIndex: 1 })
+                    .limit(limit)
+                    .lean();
+            }
         }
 
         console.log(`Search complete. Found ${segments.length} results`);

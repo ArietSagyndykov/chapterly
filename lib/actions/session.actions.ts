@@ -1,20 +1,25 @@
 "use server";
 
+import { auth } from "@clerk/nextjs/server";
 import VoiceSession from "@/database/models/voiceSession.model";
-import { connnectToDatabase } from "@/database/mongoose";
+import { connectToDatabase } from "@/database/mongoose";
 import { getCurrentBillingPeriodStart } from "../subscription-constants";
 import { EndSessionResult, StartSessionResult } from "@/types";
 
 
 
 
-export const startVoiceSesion = async (clerkId: string, bookId: string): Promise<StartSessionResult> => {
-
+export const startVoiceSesion = async (bookId: string): Promise<StartSessionResult> => {
 
     try {
-        await connnectToDatabase();
+        const { userId } = await auth();
+        if (!userId) {
+            return { success: false, error: "Unauthorized" };
+        }
+
+        await connectToDatabase();
         const session = await VoiceSession.create({
-            clerkId, bookId, startedAt: new Date(),
+            clerkId: userId, bookId, startedAt: new Date(),
             billingPeriodStart: getCurrentBillingPeriodStart(),
             durationSeconds: 0,
         });
@@ -35,11 +40,21 @@ export const startVoiceSesion = async (clerkId: string, bookId: string): Promise
 export const endVoiceSesion = async (sessionId: string, durationSeconds: number): Promise<EndSessionResult> => {
 
     try {
-        await connnectToDatabase();
-        const result = await VoiceSession.findByIdAndUpdate(sessionId, {
-            endedAt: new Date(),
-            durationSeconds,
-        });
+        const { userId } = await auth();
+        if (!userId) {
+            return { success: false, error: "Unauthorized" };
+        }
+
+        if (!Number.isFinite(durationSeconds)) {
+            return { success: false, error: "Invalid session duration" };
+        }
+        const safeDurationSeconds = Math.max(0, Math.floor(durationSeconds));
+
+        await connectToDatabase();
+        const result = await VoiceSession.findOneAndUpdate(
+            { _id: sessionId, clerkId: userId },
+            { endedAt: new Date(), durationSeconds: safeDurationSeconds },
+        );
 
         if (!result) return { success: false, error: "Voice session not found" }
 

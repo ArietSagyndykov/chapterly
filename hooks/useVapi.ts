@@ -4,7 +4,7 @@ import { useAuth } from "@clerk/nextjs";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ASSISTANT_ID, DEFAULT_VOICE, VOICE_SETTINGS } from "@/lib/constants";
 import { IBook, Messages } from "@/types";
-import { startVoiceSesion } from "@/lib/actions/session.actions";
+import { endVoiceSesion, startVoiceSesion } from "@/lib/actions/session.actions";
 import Vapi from "@vapi-ai/web"
 import { title } from "process";
 import { getVoice } from "@/lib/utils";
@@ -49,13 +49,14 @@ export const useVapi = (book: IBook) => {
     const startTimerRef = useRef<NodeJS.Timeout | null>(null);
     const sessionIdRef = useRef<string | null>(null);
     const isStoppingRef = useRef<boolean>(false);
+    const isStartingRef = useRef<boolean>(false);
 
     const bookRef = useLatestRef(book);
     const voice = book.persona || DEFAULT_VOICE;
     // const maxDurationRef = useLatestRef(limits.maxSessionMinutes * 60);
 
 
-    const isActive = status === "listening" || status === "speaking" || status === "thinking" || status === "starting";
+    const isActive = status === "connecting" || status === "listening" || status === "speaking" || status === "thinking" || status === "starting";
 
     const appendMessage = useCallback((message: Messages) => {
         setMessages((prev) => {
@@ -70,10 +71,16 @@ export const useVapi = (book: IBook) => {
     useEffect(() => {
         const vapiInstance = getVapi();
 
-        const handleMessage = (message: any) => {
+        const handleMessage = (rawMessage: unknown) => {
+            const message = rawMessage as {
+                type?: string;
+                role?: "user" | "assistant";
+                transcriptType?: "partial" | "final";
+                transcript?: string;
+            };
             if (message.type !== "transcript") return;
 
-            const { role, transcriptType, transcript } = message;
+            const { role, transcriptType, transcript = "" } = message;
 
             if (role === "user") {
                 if (transcriptType === "partial") {
@@ -97,21 +104,43 @@ export const useVapi = (book: IBook) => {
             }
         };
 
+        const handleCallStart = () => {
+            setDuration(0);
+            if (timerRef.current) clearInterval(timerRef.current);
+            timerRef.current = setInterval(() => {
+                setDuration((prev) => prev + 1);
+            }, 1000);
+        };
+
+        const handleCallEnd = () => {
+            if (timerRef.current) {
+                clearInterval(timerRef.current);
+                timerRef.current = null;
+            }
+        };
+
         vapiInstance.on("message", handleMessage);
+        vapiInstance.on("call-start", handleCallStart);
+        vapiInstance.on("call-end", handleCallEnd);
 
         return () => {
             vapiInstance.removeListener("message", handleMessage);
+            vapiInstance.removeListener("call-start", handleCallStart);
+            vapiInstance.removeListener("call-end", handleCallEnd);
+            if (timerRef.current) clearInterval(timerRef.current);
         };
     }, [appendMessage]);
 
     const start = async () => {
+        if (isStartingRef.current || isActive) return;
         if (!userId) {
             return setLimitError("Please login to start a conversation");
         }
+        isStartingRef.current = true;
         setLimitError(null);
         setStatus("connecting");
         try {
-            const result = await startVoiceSesion(userId, book._id);
+            const result = await startVoiceSesion(book._id);
 
             if (!result.success) {
                 setLimitError(result.error || "Session limit reached. Please ugrade your plan."
@@ -146,18 +175,28 @@ export const useVapi = (book: IBook) => {
             setLimitError("An error occured while starting the call");
 
         }
+        finally {
+            isStartingRef.current = false;
+        }
 
     }
     const stop = async () => {
         isStoppingRef.current = true;
         await getVapi().stop();
 
-    }
-    const clearErrors = async () => {
+        if (sessionIdRef.current) {
+            await endVoiceSesion(sessionIdRef.current, duration);
+            sessionIdRef.current = null;
+        }
 
+        setStatus("idle");
+        isStoppingRef.current = false;
+    }
+    const clearErrors = () => {
+        setLimitError(null);
     }
     return {
-        status, isActive, messages, currentMessage, currentUserMessage, duration, start, stop, clearErrors
+        status, isActive, messages, currentMessage, currentUserMessage, duration, limitError, start, stop, clearErrors
     }
 
 
