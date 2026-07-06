@@ -138,6 +138,8 @@ export const useVapi = (book: IBook) => {
                 setDuration(elapsed);
                 const max = maxDurationRef.current;
                 if (max !== null && elapsed >= max) {
+                    clearInterval(timerRef.current!);
+                    timerRef.current = null;
                     setLimitError(`You've reached the ${formatDuration(max)} limit for your plan.`);
                     stopRef.current();
                 }
