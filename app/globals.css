@@ -214,6 +214,64 @@
     @apply mt-3! text-center text-lg;
   }
 
+  .plan-current-badge {
+    @apply mt-3 inline-block bg-(--accent-light) border border-(--accent-warm) text-(--text-primary) text-sm font-semibold px-3 py-1 rounded-full;
+  }
+
+  /* ===========================================
+     PRICING TABLE COMPONENT
+     =========================================== */
+  .pricing-table-wrapper {
+    @apply w-full max-w-4xl mt-10;
+  }
+
+  .pricing-table {
+    @apply flex! flex-wrap! justify-center! gap-6!;
+  }
+
+  .pricing-table-card {
+    @apply bg-(--bg-card) border border-(--border-subtle) rounded-2xl;
+    @apply flex! flex-col! h-full! flex-1! basis-64! max-w-70!;
+    box-shadow: var(--shadow-soft);
+  }
+
+  .pricing-table-card-header {
+    @apply bg-(--bg-secondary) rounded-t-2xl;
+  }
+
+  .pricing-table-card-title {
+    @apply text-(--text-primary) font-serif;
+  }
+
+  .pricing-table-card-badge {
+    @apply bg-(--color-brand) text-white;
+  }
+
+  .pricing-table-card-fee {
+    @apply text-(--text-primary) font-serif;
+  }
+
+  .pricing-table-card-body {
+    @apply flex-1!;
+  }
+
+  .pricing-table-card-feature {
+    @apply items-start!;
+  }
+
+  .pricing-table-card-feature-title {
+    @apply text-(--text-primary) text-base! font-semibold! leading-snug!;
+  }
+
+  .pricing-table-card-footer {
+    @apply mt-auto!;
+  }
+
+  .pricing-table-card-footer-btn {
+    @apply bg-(--color-brand) hover:bg-(--color-brand-hover) text-white font-bold rounded-[10px] transition-colors;
+    font-family: 'IBM Plex Serif', serif;
+  }
+
   .new-book {
     @apply max-w-7xl px-5 mx-auto w-full space-y-6 py-18 min-h-screen;
   }

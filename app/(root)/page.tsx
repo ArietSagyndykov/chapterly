@@ -2,6 +2,8 @@ import BookCard from "@/components/ui/BookCard";
 import HeroSection from "@/components/ui/HeroSection";
 import { getAllBooks } from "@/lib/actions/book.actions";
 
+
+export const dynamic = "force-dynamic";
 const getErrorMessage = (error: unknown) => {
   if (error instanceof Error) return error.message;
   if (typeof error === "string") return error;

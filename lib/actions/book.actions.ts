@@ -4,8 +4,11 @@ import { CreateBook, TextSegment } from "@/types";
 import { escapeRegex, generateSlug, serializeData } from "../utils";
 import BookSegment from "@/database/models/bookSegment.model";
 import Book from "@/database/models/book.model";
+import { getCurrentPlanLimits } from "@/lib/subscription";
 import { del } from "@vercel/blob";
 import mongoose from "mongoose";
+
+import { revalidatePath } from "next/cache";
 
 
 const getErrorMessage = (error: unknown, fallback: string) => (
@@ -104,7 +107,19 @@ export const createBook = async (data: CreateBook) => {
             }
         }
 
+        const { limits } = await getCurrentPlanLimits();
+        const bookCount = await Book.countDocuments({ clerkId: data.clerkId });
+        if (bookCount >= limits.maxBooks) {
+            return {
+                success: false,
+                error: `You've reached your ${limits.planName} plan limit of ${limits.maxBooks} book${limits.maxBooks === 1 ? "" : "s"}. Upgrade your plan to add more.`,
+                limitReached: true,
+            }
+        }
+
         const book = await Book.create({ ...data, slug, totalSegments: 0 });
+        revalidatePath("/");
+
 
         return { success: true, data: serializeData(book) }
 

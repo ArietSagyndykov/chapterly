@@ -100,7 +100,17 @@ const UploadForm = () => {
 
       });
 
-      if (!book.success) throw new Error("Failed to create a book");
+      if (!book.success) {
+        const cleanupResult = await deleteBookBlobs([uploadedPdfBlob.url, coverUrl]);
+        if (!cleanupResult.success) {
+          console.warn("Failed to delete orphaned upload blobs", cleanupResult.error);
+        }
+        toast.error(book.error || "Failed to create a book");
+        if (book.limitReached) {
+          router.push("/subscriptions");
+        }
+        return;
+      }
       if (book.alreadyExists) {
         const cleanupResult = await deleteBookBlobs([uploadedPdfBlob.url, coverUrl]);
         if (!cleanupResult.success) {
