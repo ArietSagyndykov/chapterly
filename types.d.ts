@@ -52,12 +52,26 @@ export interface IVoiceSession extends Document {
 }
 
 export type StartSessionResult =
-    | { success: true; sessionId: string }
+    | { success: true; sessionId: string; maxDurationSeconds: number }
     | { success: false; error: string };
 
 export type EndSessionResult =
     | { success: true }
     | { success: false; error: string };
+
+// ============================================
+// SUBSCRIPTION / BILLING
+// ============================================
+
+export type PlanKey = "free" | "standard" | "pro";
+
+export interface PlanLimits {
+    planName: string;
+    maxBooks: number;
+    maxSessionsPerMonth: number | null; // null = unlimited
+    maxSessionMinutes: number;
+    hasSessionHistory: boolean;
+}
 
 // ============================================
 // FORM & INPUT TYPES

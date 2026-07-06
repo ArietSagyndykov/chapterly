@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npx eslint *)",
+      "Bash(cat /Users/arietsagyndykov/Desktop/chapterly/.mcp.json 2>/dev/null; echo \"---\"; find /Users/arietsagyndykov/Desktop/chapterly -maxdepth 1 -name \".mcp.json\"; echo \"---claude settings---\"; cat /Users/arietsagyndykov/.claude/settings.json 2>/dev/null | head -50; echo \"---claude.json mcp---\"; grep -A 20 \"mcpServers\" /Users/arietsagyndykov/.claude.json 2>/dev/null | head -60)",
+      "Read(//Users/arietsagyndykov/.claude/**)",
+      "Read(//Users/arietsagyndykov/**)"
+    ]
+  }
+}

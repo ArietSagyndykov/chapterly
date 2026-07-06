@@ -1,18 +1,30 @@
 
 "use client";
 import Transcript from '@/components/Transcript';
-import useVapi from '@/hooks/useVapi';
+import useVapi, { CallStatus } from '@/hooks/useVapi';
 import { IBook } from '@/types';
-import { formatDuration } from '@/lib/utils';
+import { formatDuration, getVoice } from '@/lib/utils';
 import { Mic, MicOff } from 'lucide-react'
 import Image from 'next/image';
 import React, { useEffect } from 'react'
 import { toast } from 'sonner';
 
+const STATUS_DISPLAY: Record<CallStatus, { label: string; dotClass: string }> = {
+    idle: { label: "Ready", dotClass: "vapi-status-dot-ready" },
+    starting: { label: "Starting…", dotClass: "vapi-status-dot-connecting" },
+    connecting: { label: "Connecting…", dotClass: "vapi-status-dot-connecting" },
+    listening: { label: "Listening", dotClass: "vapi-status-dot-listening" },
+    thinking: { label: "Thinking…", dotClass: "vapi-status-dot-thinking" },
+    speaking: { label: "Speaking", dotClass: "vapi-status-dot-speaking" },
+    error: { label: "Error", dotClass: "vapi-status-dot-ready" },
+};
+
 const VapiControls = ({ book }: { book: IBook }) => {
 
-    const { status, isActive, messages, currentMessage, currentUserMessage, duration, limitError, start, stop, clearErrors } = useVapi(book);
+    const { status, isActive, messages, currentMessage, currentUserMessage, duration, maxDurationSeconds, limitError, start, stop, clearErrors } = useVapi(book);
     const isAiBusy = status === "speaking" || status === "thinking";
+    const statusDisplay = STATUS_DISPLAY[status];
+    const voiceName = getVoice(book.persona).name;
 
     useEffect(() => {
         if (!limitError) return;
@@ -58,14 +70,17 @@ const VapiControls = ({ book }: { book: IBook }) => {
 
                     <div className="flex flex-wrap items-center gap-3">
                         <div className="vapi-status-indicator">
-                            <span className="vapi-status-dot vapi-status-dot-ready" />
-                            <span className="vapi-status-text">Ready</span>
+                            <span className={`vapi-status-dot ${statusDisplay.dotClass}`} />
+                            <span className="vapi-status-text">{statusDisplay.label}</span>
                         </div>
                         <div className="vapi-status-indicator">
-                            <span className="vapi-status-text">Voice:</span>
+                            <span className="vapi-status-text">Voice: {voiceName}</span>
                         </div>
                         <div className="vapi-status-indicator">
-                            <span className="vapi-status-text">{formatDuration(duration)}/15:00</span>
+                            <span className="vapi-status-text">
+                                {formatDuration(duration)}
+                                {maxDurationSeconds !== null ? `/${formatDuration(maxDurationSeconds)}` : ""}
+                            </span>
                         </div>
                     </div>
                 </div>
